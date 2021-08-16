@@ -1,82 +1,102 @@
 import Head from 'next/head'
 
+import { useState, useEffect } from 'react';
+
+import { ethers } from "ethers";
+
+const EAS_CONTRACT = "0xBf49E19254DF70328C6696135958C94CD6cd0430"
+const COMPETENCE_SCHEMA_UUID = "0x8978121879963d48b33ec2ad1f874c4888e46eec291c5e92415ab2261374fbaa"
+const EAS_ABI = [{"inputs":[{"internalType":"contract IASRegistry","name":"registry","type":"address"},{"internalType":"contract IEIP712Verifier","name":"verifier","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":true,"internalType":"address","name":"attester","type":"address"},{"indexed":false,"internalType":"bytes32","name":"uuid","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"schema","type":"bytes32"}],"name":"Attested","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":true,"internalType":"address","name":"attester","type":"address"},{"indexed":false,"internalType":"bytes32","name":"uuid","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"schema","type":"bytes32"}],"name":"Revoked","type":"event"},{"inputs":[],"name":"VERSION","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"uint256","name":"expirationTime","type":"uint256"},{"internalType":"bytes32","name":"refUUID","type":"bytes32"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"attest","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"uint256","name":"expirationTime","type":"uint256"},{"internalType":"bytes32","name":"refUUID","type":"bytes32"},{"internalType":"bytes","name":"data","type":"bytes"},{"internalType":"address","name":"attester","type":"address"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"attestByDelegation","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"getASRegistry","outputs":[{"internalType":"contract IASRegistry","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"}],"name":"getAttestation","outputs":[{"components":[{"internalType":"bytes32","name":"uuid","type":"bytes32"},{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"address","name":"attester","type":"address"},{"internalType":"uint256","name":"time","type":"uint256"},{"internalType":"uint256","name":"expirationTime","type":"uint256"},{"internalType":"uint256","name":"revocationTime","type":"uint256"},{"internalType":"bytes32","name":"refUUID","type":"bytes32"},{"internalType":"bytes","name":"data","type":"bytes"}],"internalType":"struct Attestation","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getAttestationsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getEIP712Verifier","outputs":[{"internalType":"contract IEIP712Verifier","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"uint256","name":"start","type":"uint256"},{"internalType":"uint256","name":"length","type":"uint256"},{"internalType":"bool","name":"reverseOrder","type":"bool"}],"name":"getReceivedAttestationUUIDs","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"}],"name":"getReceivedAttestationUUIDsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"},{"internalType":"uint256","name":"start","type":"uint256"},{"internalType":"uint256","name":"length","type":"uint256"},{"internalType":"bool","name":"reverseOrder","type":"bool"}],"name":"getRelatedAttestationUUIDs","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"}],"name":"getRelatedAttestationUUIDsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"uint256","name":"start","type":"uint256"},{"internalType":"uint256","name":"length","type":"uint256"},{"internalType":"bool","name":"reverseOrder","type":"bool"}],"name":"getSchemaAttestationUUIDs","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"schema","type":"bytes32"}],"name":"getSchemaAttestationUUIDsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"attester","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"},{"internalType":"uint256","name":"start","type":"uint256"},{"internalType":"uint256","name":"length","type":"uint256"},{"internalType":"bool","name":"reverseOrder","type":"bool"}],"name":"getSentAttestationUUIDs","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes32","name":"schema","type":"bytes32"}],"name":"getSentAttestationUUIDsCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"}],"name":"isAttestationValid","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"}],"name":"revoke","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"uuid","type":"bytes32"},{"internalType":"address","name":"attester","type":"address"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"revokeByDelegation","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+
 export default function Home() {
+
+  const [connected, setConnected] = useState(false)
+  const [balance, setBalance] = useState(0)
+  const [referralCount, setReferralCount] = useState(0)
+
+  useEffect(() => {
+    setConnected(Boolean(window.ethereum.selectedAddress))
+    getBalance()
+    fetchReferrals()
+  })
+
+  async function connectWallet() {
+    await window.ethereum.request({ method: 'eth_requestAccounts' })
+    setConnected(true)
+  }
+
+  async function fetchReferrals() {
+    if (typeof window.ethereum !== 'undefined') {
+      const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, provider)
+      const data = await contract.getReceivedAttestationUUIDsCount(account, COMPETENCE_SCHEMA_UUID)
+      setReferralCount(data.toNumber())
+    }
+  }
+
+  async function getBalance() {
+    if (typeof window.ethereum !== 'undefined' & connected) {
+      const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const balance = await provider.getBalance(account)
+      setBalance(balance.toString())
+    }
+  }
+
+  async function sendReferral() {
+    if (typeof window.ethereum !== 'undefined') {
+      await connectWallet()
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, signer)
+      const transaction = await contract.attest(
+        signer.getAddress(),
+        COMPETENCE_SCHEMA_UUID,
+        100000000000000,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c8"
+      )
+      await transaction.wait()
+      fetchReferrals()
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <Head>
-        <title>Create Next App</title>
+        <title>Mazury Labs</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold">
+        <h1 className="text-6xl font-bold mb-10">
           Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
+          <a className="text-blue-600" href="#">
+            Mazury
           </a>
         </h1>
-
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="p-3 font-mono text-lg bg-gray-100 rounded-md">
-            pages/index.js
-          </code>
+        {connected
+        ?
+          <p className="text-green-500 font-semibold mb-10">
+            Connected
+          </p>
+        :  
+          <button onClick={connectWallet} className="underline focus:outline-none mb-10">
+            Connect wallet
+          </button>
+        }
+        
+        <p className="focus:outline-none mb-2">
+          Your balance is {balance} wei
         </p>
-
-        <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <p className="focus:outline-none mb-10">
+          You've got {referralCount} referrals
+        </p>
+        <button onClick={sendReferral} className="underline font-semibold text-yellow-400 focus:outline-none mb-10">
+          (cheating) make a referral for yourself
+        </button>
       </main>
-
-      <footer className="flex items-center justify-center w-full h-24 border-t">
-        <a
-          className="flex items-center justify-center"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className="h-4 ml-2" />
-        </a>
-      </footer>
     </div>
   )
 }
