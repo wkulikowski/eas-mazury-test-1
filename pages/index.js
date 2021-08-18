@@ -27,7 +27,13 @@ export default function Home() {
 
   async function fetchReferrals() {
     if (typeof window.ethereum !== 'undefined') {
-      const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      let account;
+      if(connected) {
+        account = window.ethereum.selectedAddress
+      } else {
+        setReferralCount(0)
+        return
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum)
       const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, provider)
       const data = await contract.getReceivedAttestationUUIDsCount(account, COMPETENCE_SCHEMA_UUID)
@@ -37,7 +43,13 @@ export default function Home() {
 
   async function getBalance() {
     if (typeof window.ethereum !== 'undefined' & connected) {
-      const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      let account;
+      if(connected) {
+        account = window.ethereum.selectedAddress
+      } else {
+        setBalance(0)
+        return
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const balance = await provider.getBalance(account)
       setBalance(balance.toString())
@@ -51,11 +63,11 @@ export default function Home() {
       const signer = provider.getSigner()
       const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, signer)
       const transaction = await contract.attest(
-        signer.getAddress(),
+        signer.getAddress(), // todo take this from a form
         COMPETENCE_SCHEMA_UUID,
         100000000000000,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c8"
+        "0x310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c8" // todo take this from a form
       )
       await transaction.wait()
       fetchReferrals()
