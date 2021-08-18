@@ -13,6 +13,8 @@ export default function Home() {
   const [connected, setConnected] = useState(false)
   const [balance, setBalance] = useState(0)
   const [referralCount, setReferralCount] = useState(0)
+  const [referralAddress, setReferralAddress] = useState('')
+  const [referralRating, setReferralRating] = useState(0)
 
   useEffect(() => {
     setConnected(Boolean(window.ethereum.selectedAddress))
@@ -56,18 +58,30 @@ export default function Home() {
     }
   }
 
-  async function sendReferral() {
+  async function sendReferral(e) {
+    e.preventDefault()
+
+
+    const AbiCoder = ethers.utils.AbiCoder;
+    const abiCoder = new AbiCoder();
+    const types = ["uint", "uint"]
+
+    const encoded_data = abiCoder.encode(
+      types,
+      [1, referralRating]
+    )
+
     if (typeof window.ethereum !== 'undefined') {
       await connectWallet()
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner()
       const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, signer)
       const transaction = await contract.attest(
-        signer.getAddress(), // todo take this from a form
+        referralAddress,
         COMPETENCE_SCHEMA_UUID,
         100000000000000,
         "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c8" // todo take this from a form
+        encoded_data
       )
       await transaction.wait()
       fetchReferrals()
@@ -105,9 +119,15 @@ export default function Home() {
         <p className="focus:outline-none mb-10">
           You've got {referralCount} referrals
         </p>
-        <button onClick={sendReferral} className="underline font-semibold text-yellow-400 focus:outline-none mb-10">
-          (cheating) make a referral for yourself
-        </button>
+        <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
+          <label className="mb-1">Address</label>
+          <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+          <label className="mb-1">Python rating</label>
+          <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+          <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
+            Refer them
+          </button>
+        </form>
       </main>
     </div>
   )
