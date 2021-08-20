@@ -6,6 +6,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "ethers": "^5.4.4",
     "next": "latest",
     "react": "^17.0.2",

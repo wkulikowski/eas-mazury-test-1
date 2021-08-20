@@ -1,0 +1,47 @@
+specVersion: 0.0.2
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: EAS
+    network: rinkeby
+    source:
+      address: "0xBf49E19254DF70328C6696135958C94CD6cd0430"
+      abi: EAS
+      startBlock: 9034913
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Attested
+        - Revoked
+      abis:
+        - name: EAS
+          file: ./abis/EAS.json
+      eventHandlers:
+        - event: Attested(indexed address,indexed address,bytes32,indexed bytes32)
+          handler: handleAttested
+        - event: Revoked(indexed address,indexed address,bytes32,indexed bytes32)
+          handler: handleRevoked
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: ASRegistry
+    network: rinkeby
+    source:
+      address: "0xd8b7ec70d53b11e130fba78fbed97862ef2a13f0"
+      abi: ASRegistry
+      startBlock: 9034913
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Registered
+      abis:
+        - name: ASRegistry
+          file: ./abis/ASRegistryAbi.json
+      eventHandlers:
+        - event: Registered(indexed bytes32,indexed uint256,bytes,address,address)
+          handler: handleRegisteredAS
+      file: ./src/mapping.ts

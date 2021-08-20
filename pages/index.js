@@ -1,5 +1,7 @@
 import Head from 'next/head'
 
+import axios from "axios";
+
 import { useState, useEffect } from 'react';
 
 import { ethers } from "ethers";
@@ -88,6 +90,26 @@ export default function Home() {
     }
   }
 
+  async function getReferrals() {
+    const result = await axios.post(
+      "https://api.studio.thegraph.com/query/5950/mazury-test-1/v1.0.0",
+      {
+        query: `{
+          attestations(where: {recipient: \"0xF417ACe7b13c0ef4fcb5548390a450A4B75D3eB3\"}) {
+            id
+            data
+            schema {
+              id
+            }
+            recipient
+          }
+        }`,
+      }
+    );
+    
+    console.log(result.data)  
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <Head>
@@ -96,12 +118,7 @@ export default function Home() {
       </Head>
 
       <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold mb-10">
-          Welcome to{' '}
-          <a className="text-blue-600" href="#">
-            Mazury
-          </a>
-        </h1>
+        <h1 className="text-6xl font-bold mb-10">Welcome to <a className="text-blue-600" href="#">Mazury</a></h1>
         {connected
         ?
           <p className="text-green-500 font-semibold mb-10">
@@ -128,6 +145,9 @@ export default function Home() {
             Refer them
           </button>
         </form>
+        <button onClick={getReferrals} className="font-semibold text-gray-50 bg-green-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
+          Get referrals
+        </button>
       </main>
     </div>
   )
