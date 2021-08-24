@@ -17,16 +17,37 @@ export default function Home() {
   const [referralCount, setReferralCount] = useState(0)
   const [referralAddress, setReferralAddress] = useState('')
   const [referralRating, setReferralRating] = useState(0)
+  const [network, setNetwork] = useState("")
+  const [provider, setProvider] = useState(undefined)
 
   useEffect(() => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    setProvider(provider)
+    window.ethereum.on('chainChanged', function (networkId) {
+      // Time to reload your interface with the new networkId
+      window.location.reload()
+    })
     setConnected(Boolean(window.ethereum.selectedAddress))
-    getBalance()
-    fetchReferrals()
-  })
+  }, [])
+
+  useEffect(() => {
+    if(connected){
+      getNetwork()
+    }
+  }, [connected])
+
+  useEffect(() => {
+    if(network == "rinkeby"){
+      getBalance()
+      fetchReferrals()
+    }
+  }, [network])
 
   async function connectWallet() {
     await window.ethereum.request({ method: 'eth_requestAccounts' })
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
     setConnected(true)
+    setProvider(provider)
   }
 
   async function fetchReferrals() {
@@ -38,10 +59,18 @@ export default function Home() {
         setReferralCount(0)
         return
       }
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
       const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, provider)
       const data = await contract.getReceivedAttestationUUIDsCount(account, COMPETENCE_SCHEMA_UUID)
       setReferralCount(data.toNumber())
+    }
+  }
+
+  async function getNetwork() {
+    if (typeof window.ethereum !== 'undefined' & connected) {
+      const network = await provider.getNetwork()
+      if(network.name != network){
+        setNetwork(network.name)
+      }
     }
   }
 
@@ -54,7 +83,6 @@ export default function Home() {
         setBalance(0)
         return
       }
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
       const balance = await provider.getBalance(account)
       setBalance(balance.toString())
     }
@@ -122,32 +150,35 @@ export default function Home() {
         {connected
         ?
           <p className="text-green-500 font-semibold mb-10">
-            Connected
+            Connected to {`${network}`}
           </p>
         :  
           <button onClick={connectWallet} className="underline focus:outline-none mb-10">
             Connect wallet
           </button>
         }
-        
-        <p className="focus:outline-none mb-2">
-          Your balance is {balance} wei
-        </p>
-        <p className="focus:outline-none mb-10">
-          You've got {referralCount} referrals
-        </p>
-        <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
-          <label className="mb-1">Address</label>
-          <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
-          <label className="mb-1">Python rating</label>
-          <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
-          <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
-            Refer them
+        {network == "rinkeby" &&
+        <div>
+          <p className="focus:outline-none mb-2">
+            Your balance is {balance} wei
+          </p>
+          <p className="focus:outline-none mb-10">
+            You've got {referralCount} referrals
+          </p>
+          <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
+            <label className="mb-1">Address</label>
+            <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+            <label className="mb-1">Python rating</label>
+            <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+            <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
+              Refer them
+            </button>
+          </form>
+          <button onClick={getReferrals} className="font-semibold text-gray-50 bg-green-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
+            Get referrals
           </button>
-        </form>
-        <button onClick={getReferrals} className="font-semibold text-gray-50 bg-green-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
-          Get referrals
-        </button>
+        </div>
+        }
       </main>
     </div>
   )
