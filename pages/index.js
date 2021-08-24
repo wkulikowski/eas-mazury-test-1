@@ -14,7 +14,7 @@ export default function Home() {
 
   const [connected, setConnected] = useState(false)
   const [balance, setBalance] = useState(0)
-  const [referralCount, setReferralCount] = useState(0)
+  const [referrals, setReferrals] = useState([])
   const [referralAddress, setReferralAddress] = useState('')
   const [referralRating, setReferralRating] = useState(0)
   const [network, setNetwork] = useState("")
@@ -45,24 +45,27 @@ export default function Home() {
 
   async function connectWallet() {
     await window.ethereum.request({ method: 'eth_requestAccounts' })
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
     setConnected(true)
-    setProvider(provider)
   }
 
   async function fetchReferrals() {
-    if (typeof window.ethereum !== 'undefined') {
-      let account;
-      if(connected) {
-        account = window.ethereum.selectedAddress
-      } else {
-        setReferralCount(0)
-        return
+    const result = await axios.post(
+      "https://api.studio.thegraph.com/query/5950/mazury-test-1/v1.0.0",
+      {
+        query: `{
+          attestations(where: {recipient: \"0xF417ACe7b13c0ef4fcb5548390a450A4B75D3eB3\", revoked: false}) {
+            id
+            data
+            schema {
+              id
+            }
+            recipient
+            attester
+          }
+        }`,
       }
-      const contract = new ethers.Contract(EAS_CONTRACT, EAS_ABI, provider)
-      const data = await contract.getReceivedAttestationUUIDsCount(account, COMPETENCE_SCHEMA_UUID)
-      setReferralCount(data.toNumber())
-    }
+    );
+    setReferrals(result.data.data.attestations)
   }
 
   async function getNetwork() {
@@ -118,24 +121,25 @@ export default function Home() {
     }
   }
 
-  async function getReferrals() {
-    const result = await axios.post(
-      "https://api.studio.thegraph.com/query/5950/mazury-test-1/v1.0.0",
-      {
-        query: `{
-          attestations(where: {recipient: \"0xF417ACe7b13c0ef4fcb5548390a450A4B75D3eB3\"}) {
-            id
-            data
-            schema {
-              id
-            }
-            recipient
-          }
-        }`,
-      }
-    );
-    
-    console.log(result.data)  
+  function parseReferralData(referralData){
+
+    const programmingLangMapping = {
+      1: "Python"
+    }
+
+    const AbiCoder = ethers.utils.AbiCoder;
+    const abiCoder = new AbiCoder();
+    const types = ["uint", "uint"]
+
+    const data = abiCoder.decode(
+      types,
+      referralData
+    )
+
+    return [
+      programmingLangMapping[data[0].toNumber()],
+      data[1].toString()
+    ]
   }
 
   return (
@@ -145,38 +149,41 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold mb-10">Welcome to <a className="text-blue-600" href="#">Mazury</a></h1>
+      <main className="flex flex-col items-center w-full flex-1 px-20 text-center">
         {connected
         ?
-          <p className="text-green-500 font-semibold mb-10">
+          <p className="text-green-500 font-semibold absolute top-4 right-10">
             Connected to {`${network}`}
           </p>
         :  
-          <button onClick={connectWallet} className="underline focus:outline-none mb-10">
+          <button onClick={connectWallet} className="underline focus:outline-none absolute top-4 right-10">
             Connect wallet
           </button>
         }
         {network == "rinkeby" &&
         <div>
-          <p className="focus:outline-none mb-2">
-            Your balance is {balance} wei
-          </p>
-          <p className="focus:outline-none mb-10">
-            You've got {referralCount} referrals
-          </p>
+          <h2 className="mt-6 mb-4 text-4xl font-semibold text-left">Your referrals</h2>
+          <ul>
+            {referrals.map((referral) =>
+              <li key={referral.id} className="border-2 border-green-300 rounded-lg bg-green-50 p-4 mb-4">
+                <p className="text-sm font-light">Referrer: {referral.attester}</p>
+                <div className="flex flex-row justify-between mx-auto w-44 mt-4 font-semibold text-green-800">
+                  <p>{parseReferralData(referral.data)[0]}</p>
+                  <p>{parseReferralData(referral.data)[1]}</p>
+                </div>
+              </li>
+            )}
+          </ul>
+          <h2 className="mt-10 mb-4 text-4xl font-semibold text-left">Refer somebody</h2>
           <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
             <label className="mb-1">Address</label>
             <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
             <label className="mb-1">Python rating</label>
             <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
             <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
-              Refer them
+              Refer this address
             </button>
           </form>
-          <button onClick={getReferrals} className="font-semibold text-gray-50 bg-green-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
-            Get referrals
-          </button>
         </div>
         }
       </main>
