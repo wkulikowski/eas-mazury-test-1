@@ -13,12 +13,12 @@ const EAS_ABI = [{"inputs":[{"internalType":"contract IASRegistry","name":"regis
 export default function Home() {
 
   const [connected, setConnected] = useState(false)
-  const [balance, setBalance] = useState(0)
   const [referrals, setReferrals] = useState([])
   const [referralAddress, setReferralAddress] = useState('')
   const [referralRating, setReferralRating] = useState(0)
   const [network, setNetwork] = useState("")
   const [provider, setProvider] = useState(undefined)
+  const [score, setScore] = useState(0)
 
   useEffect(() => {
     const provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -26,6 +26,7 @@ export default function Home() {
     window.ethereum.on('chainChanged', function (networkId) {
       // Time to reload your interface with the new networkId
       window.location.reload()
+      getNetwork()
     })
     setConnected(Boolean(window.ethereum.selectedAddress))
   }, [])
@@ -38,10 +39,13 @@ export default function Home() {
 
   useEffect(() => {
     if(network == "rinkeby"){
-      getBalance()
       fetchReferrals()
     }
   }, [network])
+
+  useEffect(() => {
+    calculateScore()
+  }, [referrals])
 
   async function connectWallet() {
     await window.ethereum.request({ method: 'eth_requestAccounts' })
@@ -77,20 +81,6 @@ export default function Home() {
     }
   }
 
-  async function getBalance() {
-    if (typeof window.ethereum !== 'undefined' & connected) {
-      let account;
-      if(connected) {
-        account = window.ethereum.selectedAddress
-      } else {
-        setBalance(0)
-        return
-      }
-      const balance = await provider.getBalance(account)
-      setBalance(balance.toString())
-    }
-  }
-
   async function sendReferral(e) {
     e.preventDefault()
 
@@ -121,6 +111,10 @@ export default function Home() {
     }
   }
 
+  function calculateScore() {
+    setScore(103.5) // figure out the actual score mechanics later
+  }
+
   function parseReferralData(referralData){
 
     const programmingLangMapping = {
@@ -149,42 +143,70 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex flex-col items-center w-full flex-1 px-20 text-center">
-        {connected
-        ?
-          <p className="text-green-500 font-semibold absolute top-4 right-10">
-            Connected to {`${network}`}
-          </p>
-        :  
-          <button onClick={connectWallet} className="underline focus:outline-none absolute top-4 right-10">
-            Connect wallet
-          </button>
-        }
-        {network == "rinkeby" &&
-        <div>
-          <h2 className="mt-6 mb-4 text-4xl font-semibold text-left">Your referrals</h2>
-          <ul>
-            {referrals.map((referral) =>
-              <li key={referral.id} className="border-2 border-green-300 rounded-lg bg-green-50 p-4 mb-4">
-                <p className="text-sm font-light">Referrer: {referral.attester}</p>
-                <div className="flex flex-row justify-between mx-auto w-44 mt-4 font-semibold text-green-800">
-                  <p>{parseReferralData(referral.data)[0]}</p>
-                  <p>{parseReferralData(referral.data)[1]}</p>
-                </div>
-              </li>
-            )}
-          </ul>
-          <h2 className="mt-10 mb-4 text-4xl font-semibold text-left">Refer somebody</h2>
-          <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
-            <label className="mb-1">Address</label>
-            <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
-            <label className="mb-1">Python rating</label>
-            <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
-            <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
-              Refer this address
+      <main className="flex flex-col w-full flex-1 text-center">
+        <nav className="flex flex-row justify-between px-20 py-4">
+          <p className="font-semibold font-sans text-green-600 text-xl">Mazury</p>
+          <input placeholder="Search any ENS or ETH address" className="w-72 ml-24 text-left border-2 border-gray-300 pl-7 py-1 focus:outline-none rounded-lg text-gray-500"></input>
+          {connected
+          ?
+            <p className="text-green-500 font-semibold">
+              Connected to {`${network}`}
+            </p>
+          :  
+            <button onClick={connectWallet} className="underline focus:outline-none">
+              Connect wallet
             </button>
-          </form>
-        </div>
+          }
+        </nav>
+        {network == "rinkeby"
+        ?
+          <div className="max-w-screen-md mx-auto">
+            <div className="fixed right-40 top-1/3 w-52 border-2 border-gray-900 h-48 text-left py-2 px-4 rounded-lg">
+              <h2 className="font-semibold text-2xl mb-2">Your scores</h2>
+              <ul className="font-medium">
+                <li className="flex flex-row justify-between mb-1 text-green-500">
+                  <p>Python</p>
+                  <p>{score}</p>
+                </li>
+                <li className="flex flex-row justify-between mb-1 text-yellow-400">
+                  <p>JavaScript</p>
+                  <p>—</p>
+                </li>
+                <li className="flex flex-row justify-between mb-1 text-yellow-400">
+                  <p>Solidity</p>
+                  <p>—</p>
+                </li>
+                <li className="flex flex-row justify-between mb-1 text-yellow-400">
+                  <p>Rust</p>
+                  <p>—</p>
+                </li>
+              </ul>
+            </div>
+            <h2 className="mt-6 mb-4 text-4xl font-semibold text-left">Your referrals</h2>
+            <ul>
+              {referrals.map((referral) =>
+                <li key={referral.id} className="border-2 border-green-300 rounded-lg bg-green-50 p-4 mb-4">
+                  <p className="text-sm font-light">Referrer: {referral.attester}</p>
+                  <div className="flex flex-row justify-between mx-auto w-44 mt-4 font-semibold text-green-800">
+                    <p>{parseReferralData(referral.data)[0]}</p>
+                    <p>{parseReferralData(referral.data)[1]}</p>
+                  </div>
+                </li>
+              )}
+            </ul>
+            <h2 className="mt-10 mb-4 text-4xl font-semibold text-left">Refer somebody</h2>
+            <form onSubmit={(e) => sendReferral(e)} className="flex flex-col">
+              <label className="mb-1">Address</label>
+              <input onChange={(e) => setReferralAddress(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+              <label className="mb-1">Python rating</label>
+              <input onChange={(e) => setReferralRating(e.target.value)} className="border-2 mb-4 rounded-sm"></input>
+              <button type="submit" className="font-semibold text-gray-50 bg-blue-500 focus:outline-none mb-10 py-2 px-4 rounded-md">
+                Refer this address
+              </button>
+            </form>
+          </div>
+        :
+          <p>Please connect to rinkeby to use this app</p>
         }
       </main>
     </div>
